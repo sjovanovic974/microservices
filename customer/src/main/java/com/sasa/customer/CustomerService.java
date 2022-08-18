@@ -2,11 +2,14 @@ package com.sasa.customer;
 
 import com.sasa.clients.fraud.FraudCheckResponse;
 import com.sasa.clients.fraud.FraudClient;
+import com.sasa.clients.notification.NotificationClient;
+import com.sasa.clients.notification.NotificationRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public record CustomerService(CustomerRepository customerRepository,
-                              FraudClient fraudClient) {
+                              FraudClient fraudClient,
+                              NotificationClient notificationClient) {
     public void registerCustomer(CustomerRegistrationRequest request) {
         Customer customer = Customer.builder()
                 .firstName(request.firstName())
@@ -26,6 +29,14 @@ public record CustomerService(CustomerRepository customerRepository,
             throw new IllegalStateException("Fraudster");
         }
 
-        // toDO: send notification
+        // send notification
+        NotificationRequest notificationRequest = new NotificationRequest(
+                customer.getId(),
+                customer.getEmail(),
+                String.format("Hi %s, welcome to Damage, inc. ",
+                        customer.getFirstName())
+        );
+
+        notificationClient.sendNotification(notificationRequest);
     }
 }
