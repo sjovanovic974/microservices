@@ -6,12 +6,10 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
-@ToString
 public class Notification {
     @Id
     @SequenceGenerator(

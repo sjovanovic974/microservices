@@ -1,15 +1,15 @@
 package com.sasa.customer;
 
+import com.sasa.amqp.RabbitMQMessageProducer;
 import com.sasa.clients.fraud.FraudCheckResponse;
 import com.sasa.clients.fraud.FraudClient;
-import com.sasa.clients.notification.NotificationClient;
 import com.sasa.clients.notification.NotificationRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public record CustomerService(CustomerRepository customerRepository,
                               FraudClient fraudClient,
-                              NotificationClient notificationClient) {
+                              RabbitMQMessageProducer rabbitMQMessageProducer) {
     public void registerCustomer(CustomerRegistrationRequest request) {
         Customer customer = Customer.builder()
                 .firstName(request.firstName())
@@ -29,7 +29,7 @@ public record CustomerService(CustomerRepository customerRepository,
             throw new IllegalStateException("Fraudster");
         }
 
-        // send notification
+        // send notification, make it async i.e. add to queue
         NotificationRequest notificationRequest = new NotificationRequest(
                 customer.getId(),
                 customer.getEmail(),
@@ -37,6 +37,10 @@ public record CustomerService(CustomerRepository customerRepository,
                         customer.getFirstName())
         );
 
-        notificationClient.sendNotification(notificationRequest);
+        rabbitMQMessageProducer.publish(
+                notificationRequest,
+                "internal.exchange",
+                "internal.notification.routing-key"
+        );
     }
 }
